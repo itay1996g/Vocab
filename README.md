@@ -26,7 +26,7 @@ npm run dev
 
 ## Notes
 
-- A new install starts with the Spanish words in `src/data/starter-words.json`. Older installs get the missing ones once, on update.
+- A new install starts with the Spanish words in `src/data/starter-words.json`. When you change that file, add 1 to the database version in `src/db.ts`, so older installs get the missing words.
 - Export a backup from Settings from time to time ("Save to Files"). Import merges the file and skips words you already have.
 - In the translation, separate several correct answers with "," or "/". Text in parentheses is optional in the quiz.
 - To change the app icon, edit `public/logo.svg` and run `npm run icons`.

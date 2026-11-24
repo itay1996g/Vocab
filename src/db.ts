@@ -35,15 +35,43 @@ export interface WordList {
   words: (Omit<Word, 'id' | 'deckId'> & { deck: string | null })[]
 }
 
-// A new install gets the starter words when the database is created. An older install gets them once, at the upgrade to version 2.
-// Delete all data empties the tables but keeps the version, so the starter words do not come back.
-db.version(2)
+const STARTER_WORDS = starterWords as WordList
+
+// A new install gets the starter words when the database is created, and an older install gets the missing ones at each upgrade.
+// Add 1 to the version when the starter words change.
+db.version(3)
   .stores({ decks: '++id', words: '++id, deckId' })
-  .upgrade((transaction) => addStarterWords(transaction))
+  .upgrade(async (transaction) => {
+    // An empty bank was deleted on purpose, so it stays empty.
+    if ((await transaction.table('words').count()) === 0) return
+    await addStarterWords(transaction)
+    await moveStarterWordsOutOfNouns(transaction)
+  })
 db.on('populate', (transaction) => addStarterWords(transaction))
 
 function addStarterWords(transaction: Transaction) {
-  return mergeWords(starterWords as WordList, transaction.table('decks'), transaction.table('words'))
+  return mergeWords(STARTER_WORDS, transaction.table('decks'), transaction.table('words'))
+}
+
+// Version 3 moved some starter words from Nouns to topic decks, like mesa to House. A word that is still in Nouns moves too.
+async function moveStarterWordsOutOfNouns(transaction: Transaction) {
+  const decks: Deck[] = await transaction.table('decks').toArray()
+  const deckIds = new Map(decks.map((deck) => [deckNameKey(deck.name), deck.id]))
+  const nounsDeckId = deckIds.get(deckNameKey('Nouns'))
+  if (nounsDeckId === undefined) return
+
+  const starterDeckIds = new Map(
+    STARTER_WORDS.words.map((word) => [termKey(word.term), deckIds.get(deckNameKey(word.deck ?? ''))]),
+  )
+  await transaction
+    .table('words')
+    .where('deckId')
+    .equals(nounsDeckId)
+    .modify((word: Word) => {
+      const starterDeckId = starterDeckIds.get(termKey(word.term))
+      if (starterDeckId === undefined) return
+      word.deckId = starterDeckId
+    })
 }
 
 // A word that is already in the bank is skipped, also with another translation.
