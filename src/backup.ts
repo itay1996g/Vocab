@@ -1,5 +1,4 @@
-import { normalizeText } from './answer'
-import { db, deckNameKey, type Word } from './db'
+import { db, deckNameKey, termKey, type Word } from './db'
 
 const BACKUP_APP = 'vocab'
 const BACKUP_VERSION = 1
@@ -54,11 +53,7 @@ function parseBackup(text: string): Backup {
   return backup
 }
 
-function wordKey(word: { term: string; translation: string }): string {
-  return `${normalizeText(word.term)}=${normalizeText(word.translation)}`
-}
-
-// Merges the backup into the bank. Words that are already in the bank are skipped.
+// Merges the backup into the bank. A word that is already in the bank is skipped, also with another translation.
 export async function importBackup(file: File): Promise<{ added: number; skipped: number }> {
   const backup = parseBackup(await file.text())
 
@@ -69,11 +64,11 @@ export async function importBackup(file: File): Promise<{ added: number; skipped
       deckIds.set(deckNameKey(deckName), await db.decks.add({ name: deckName.trim() }))
     }
 
-    const existingKeys = new Set((await db.words.toArray()).map(wordKey))
+    const existingTerms = new Set((await db.words.toArray()).map((word) => termKey(word.term)))
     let added = 0
     for (const { deck, ...word } of backup.words) {
-      if (existingKeys.has(wordKey(word))) continue
-      existingKeys.add(wordKey(word))
+      if (existingTerms.has(termKey(word.term))) continue
+      existingTerms.add(termKey(word.term))
       await db.words.add({ ...word, deckId: deck === null ? null : (deckIds.get(deckNameKey(deck)) ?? null) })
       added += 1
     }

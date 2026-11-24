@@ -1,6 +1,5 @@
 import { useRef, useState, type FormEvent } from 'react'
-import { normalizeText } from '../answer'
-import { addWord, db, type Deck, type Word } from '../db'
+import { addWord, db, termKey, type Deck, type Word } from '../db'
 import { Mastery } from './Mastery'
 import { Modal } from './Modal'
 
@@ -21,11 +20,8 @@ export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordMo
   const [lastAddedTerm, setLastAddedTerm] = useState('')
   const termInput = useRef<HTMLInputElement>(null)
 
-  const normalizedTerm = normalizeText(term)
-  const duplicate = normalizedTerm
-    ? words.find((other) => other.id !== word?.id && normalizeText(other.term) === normalizedTerm)
-    : undefined
-  const canSave = term.trim() !== '' && translation.trim() !== ''
+  const duplicate = words.find((other) => other.id !== word?.id && termKey(other.term) === termKey(term))
+  const canSave = term.trim() !== '' && translation.trim() !== '' && !duplicate
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -76,7 +72,7 @@ export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordMo
           />
           {duplicate && (
             <span className="field-hint warn" dir="auto">
-              Already in your bank: {duplicate.term} = {duplicate.translation}
+              Already in your bank: {duplicate.term} = {duplicate.translation}. Edit that word instead.
             </span>
           )}
         </label>

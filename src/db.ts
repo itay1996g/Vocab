@@ -38,6 +38,11 @@ export function isHard(word: Word): boolean {
   return word.wrongCount > 0 && word.strength < 2
 }
 
+// A word exists once in the bank. Case and spaces do not count, accents do: si and sí are different words.
+export function termKey(term: string): string {
+  return term.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
 export function deckNameKey(name: string): string {
   return name.trim().toLowerCase()
 }
