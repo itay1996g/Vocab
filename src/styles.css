@@ -800,11 +800,17 @@ select.input {
   margin-top: 20px;
 }
 
+/* Sticky, so the bar stays on screen when the iPhone keyboard scrolls the page. */
 .session-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin: calc(-14px - env(safe-area-inset-top)) -16px 18px;
+  padding: calc(env(safe-area-inset-top) + 14px) 16px 10px;
+  background: var(--bg);
 }
 
 .session-bar .icon-button {
