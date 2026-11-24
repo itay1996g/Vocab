@@ -1,4 +1,5 @@
-import Dexie, { type EntityTable } from 'dexie'
+import Dexie, { type EntityTable, type Transaction } from 'dexie'
+import starterWords from './data/starter-words.json'
 
 export interface Deck {
   id: number
@@ -29,10 +30,40 @@ export const db = new Dexie('vocab') as Dexie & {
   words: EntityTable<Word, 'id'>
 }
 
-db.version(1).stores({
-  decks: '++id',
-  words: '++id, deckId',
-})
+export interface WordList {
+  decks: string[]
+  words: (Omit<Word, 'id' | 'deckId'> & { deck: string | null })[]
+}
+
+// A new install gets the starter words when the database is created. An older install gets them once, at the upgrade to version 2.
+// Delete all data empties the tables but keeps the version, so the starter words do not come back.
+db.version(2)
+  .stores({ decks: '++id', words: '++id, deckId' })
+  .upgrade((transaction) => addStarterWords(transaction))
+db.on('populate', (transaction) => addStarterWords(transaction))
+
+function addStarterWords(transaction: Transaction) {
+  return mergeWords(starterWords as WordList, transaction.table('decks'), transaction.table('words'))
+}
+
+// A word that is already in the bank is skipped, also with another translation.
+export async function mergeWords(list: WordList, decks: EntityTable<Deck, 'id'>, words: EntityTable<Word, 'id'>) {
+  const deckIds = new Map((await decks.toArray()).map((deck) => [deckNameKey(deck.name), deck.id]))
+  for (const deckName of list.decks) {
+    if (deckIds.has(deckNameKey(deckName))) continue
+    deckIds.set(deckNameKey(deckName), await decks.add({ name: deckName.trim() }))
+  }
+
+  const existingTerms = new Set((await words.toArray()).map((word) => termKey(word.term)))
+  let added = 0
+  for (const { deck, ...word } of list.words) {
+    if (existingTerms.has(termKey(word.term))) continue
+    existingTerms.add(termKey(word.term))
+    await words.add({ ...word, deckId: deck === null ? null : (deckIds.get(deckNameKey(deck)) ?? null) })
+    added += 1
+  }
+  return { added, skipped: list.words.length - added }
+}
 
 export function isHard(word: Word): boolean {
   return word.wrongCount > 0 && word.strength < 2

@@ -1,16 +1,12 @@
-import { db, deckNameKey, termKey, type Word } from './db'
+import { db, mergeWords, type WordList } from './db'
 
 const BACKUP_APP = 'vocab'
 const BACKUP_VERSION = 1
 
-type BackupWord = Omit<Word, 'id' | 'deckId'> & { deck: string | null }
-
-interface Backup {
+interface Backup extends WordList {
   app: string
   version: number
   exportedAt: string
-  decks: string[]
-  words: BackupWord[]
 }
 
 export async function exportBackup() {
@@ -47,31 +43,13 @@ function parseBackup(text: string): Backup {
   if (!Array.isArray(backup.decks)) throw new Error('This backup file is damaged.')
   if (!Array.isArray(backup.words)) throw new Error('This backup file is damaged.')
   const wordsAreValid = backup.words.every(
-    (word: BackupWord) => typeof word?.term === 'string' && typeof word?.translation === 'string',
+    (word: WordList['words'][number]) => typeof word?.term === 'string' && typeof word?.translation === 'string',
   )
   if (!wordsAreValid) throw new Error('This backup file is damaged.')
   return backup
 }
 
-// Merges the backup into the bank. A word that is already in the bank is skipped, also with another translation.
 export async function importBackup(file: File): Promise<{ added: number; skipped: number }> {
   const backup = parseBackup(await file.text())
-
-  return db.transaction('rw', db.decks, db.words, async () => {
-    const deckIds = new Map((await db.decks.toArray()).map((deck) => [deckNameKey(deck.name), deck.id]))
-    for (const deckName of backup.decks) {
-      if (deckIds.has(deckNameKey(deckName))) continue
-      deckIds.set(deckNameKey(deckName), await db.decks.add({ name: deckName.trim() }))
-    }
-
-    const existingTerms = new Set((await db.words.toArray()).map((word) => termKey(word.term)))
-    let added = 0
-    for (const { deck, ...word } of backup.words) {
-      if (existingTerms.has(termKey(word.term))) continue
-      existingTerms.add(termKey(word.term))
-      await db.words.add({ ...word, deckId: deck === null ? null : (deckIds.get(deckNameKey(deck)) ?? null) })
-      added += 1
-    }
-    return { added, skipped: backup.words.length - added }
-  })
+  return db.transaction('rw', db.decks, db.words, () => mergeWords(backup, db.decks, db.words))
 }
