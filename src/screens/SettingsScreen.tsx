@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { exportBackup, importBackup } from '../backup'
-import type { Deck, Word } from '../db'
+import { clearAllData, type Deck, type Word } from '../db'
 import { Screen } from '../components/Screen'
 import { Segmented } from '../components/Segmented'
 import { plural } from '../practice'
@@ -49,6 +49,14 @@ export function SettingsScreen({ words, decks }: SettingsScreenProps) {
     }
   }
 
+  async function handleClearAllData() {
+    const question = 'Delete all words, decks, progress and settings? You cannot undo this. Export a backup first if you want to keep them.'
+    if (!confirm(question)) return
+    await clearAllData()
+    localStorage.clear()
+    location.reload()
+  }
+
   return (
     <Screen title="Settings">
       <section className="card">
@@ -72,6 +80,14 @@ export function SettingsScreen({ words, decks }: SettingsScreenProps) {
           </label>
         </div>
         {backupMessage && <p className="card-text message">{backupMessage}</p>}
+      </section>
+
+      <section className="card">
+        <h2>Reset</h2>
+        <p className="card-text">Delete all words, decks, progress and settings. The app starts fresh.</p>
+        <button className="button bad-soft block" onClick={handleClearAllData}>
+          Delete all data
+        </button>
       </section>
 
       <section className="card">

@@ -18,6 +18,8 @@ export interface Word {
   lastReviewedAt: number | null
   // Missing on words saved before this option existed: they are in the quiz.
   skipQuiz?: boolean
+  // An explanation shown next to the translation. The quiz does not check it.
+  comment?: string
 }
 
 export const MAX_STRENGTH = 5
@@ -40,7 +42,7 @@ export function deckNameKey(name: string): string {
   return name.trim().toLowerCase()
 }
 
-export async function addWord(fields: Pick<Word, 'term' | 'translation' | 'deckId' | 'skipQuiz'>) {
+export async function addWord(fields: Pick<Word, 'term' | 'translation' | 'comment' | 'deckId' | 'skipQuiz'>) {
   await db.words.add({
     ...fields,
     createdAt: Date.now(),
@@ -64,9 +66,17 @@ export async function recordReview(wordId: number, correct: boolean) {
   })
 }
 
-export async function deleteDeck(deckId: number) {
+export async function deleteDeck(deckId: number, { withWords }: { withWords: boolean }) {
   await db.transaction('rw', db.decks, db.words, async () => {
-    await db.words.where('deckId').equals(deckId).modify({ deckId: null })
+    const deckWords = db.words.where('deckId').equals(deckId)
+    await (withWords ? deckWords.delete() : deckWords.modify({ deckId: null }))
     await db.decks.delete(deckId)
+  })
+}
+
+export async function clearAllData() {
+  await db.transaction('rw', db.decks, db.words, async () => {
+    await db.words.clear()
+    await db.decks.clear()
   })
 }

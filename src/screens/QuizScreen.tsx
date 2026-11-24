@@ -19,11 +19,13 @@ export function QuizScreen({ words, decks, onGoToWords }: QuizScreenProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [typedAnswer, setTypedAnswer] = useState('')
   const [checkedCorrect, setCheckedCorrect] = useState<boolean | null>(null)
+  const [hintShown, setHintShown] = useState(false)
   const answerInput = useRef<HTMLInputElement>(null)
 
   function startSession(items: PracticeItem[]) {
     setTypedAnswer('')
     setCheckedCorrect(null)
+    setHintShown(false)
     setSession({ items, results: [] })
   }
 
@@ -70,6 +72,7 @@ export function QuizScreen({ words, decks, onGoToWords }: QuizScreenProps) {
     answerInput.current?.focus()
     setTypedAnswer('')
     setCheckedCorrect(null)
+    setHintShown(false)
     setSession({ ...session, results: [...session.results, correct] })
     await recordReview(item.word.id, correct)
   }
@@ -89,6 +92,11 @@ export function QuizScreen({ words, decks, onGoToWords }: QuizScreenProps) {
     setCheckedCorrect(false)
   }
 
+  const showHint = () => {
+    answerInput.current?.focus()
+    setHintShown(true)
+  }
+
   const inputState = checked ? (checkedCorrect ? ' good' : ' bad') : ''
 
   return (
@@ -100,6 +108,16 @@ export function QuizScreen({ words, decks, onGoToWords }: QuizScreenProps) {
         <span className="prompt-text" dir="auto">
           {promptOf(item)}
         </span>
+        {item.word.comment && (checked || hintShown) && (
+          <span className="prompt-comment" dir="auto">
+            {item.word.comment}
+          </span>
+        )}
+        {item.word.comment && !checked && !hintShown && (
+          <button className="hint-button" type="button" onClick={showHint}>
+            Show hint
+          </button>
+        )}
       </div>
 
       <form onSubmit={handleSubmit}>

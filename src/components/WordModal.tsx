@@ -15,6 +15,7 @@ interface WordModalProps {
 export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordModalProps) {
   const [term, setTerm] = useState(word?.term ?? '')
   const [translation, setTranslation] = useState(word?.translation ?? '')
+  const [comment, setComment] = useState(word?.comment ?? '')
   const [deckId, setDeckId] = useState(word ? word.deckId : defaultDeckId)
   const [useInQuiz, setUseInQuiz] = useState(!word?.skipQuiz)
   const [lastAddedTerm, setLastAddedTerm] = useState('')
@@ -29,7 +30,13 @@ export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordMo
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     if (!canSave) return
-    const fields = { term: term.trim(), translation: translation.trim(), deckId, skipQuiz: !useInQuiz }
+    const fields = {
+      term: term.trim(),
+      translation: translation.trim(),
+      comment: comment.trim(),
+      deckId,
+      skipQuiz: !useInQuiz,
+    }
 
     if (word) {
       await db.words.update(word.id, fields)
@@ -42,6 +49,7 @@ export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordMo
     setLastAddedTerm(fields.term)
     setTerm('')
     setTranslation('')
+    setComment('')
   }
 
   async function handleDelete() {
@@ -84,6 +92,19 @@ export function WordModal({ word, words, decks, defaultDeckId, onClose }: WordMo
             autoCapitalize="off"
           />
           <span className="field-hint">Several answers? Separate them with a comma or a slash.</span>
+        </label>
+
+        <label className="field">
+          <span className="field-label">Comment</span>
+          <textarea
+            className="input"
+            dir="auto"
+            rows={2}
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+            placeholder="Optional, for example: for states and location"
+          />
+          <span className="field-hint">A hint you can open in practice. The quiz does not check it.</span>
         </label>
 
         <label className="field">

@@ -13,6 +13,9 @@ interface DecksModalProps {
 export function DecksModal({ decks, words, onClose }: DecksModalProps) {
   const [newDeckName, setNewDeckName] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null)
+
+  const wordCountOf = (deck: Deck) => words.filter((word) => word.deckId === deck.id).length
 
   function nameIsTaken(name: string, deckId?: number): boolean {
     return decks.some((deck) => deck.id !== deckId && deckNameKey(deck.name) === deckNameKey(name))
@@ -47,10 +50,38 @@ export function DecksModal({ decks, words, onClose }: DecksModalProps) {
     setErrorMessage('')
   }
 
-  async function handleDelete(deck: Deck) {
-    const wordCount = words.filter((word) => word.deckId === deck.id).length
-    if (!confirm(`Delete the deck "${deck.name}"? Its ${plural(wordCount, 'word')} stay in your bank.`)) return
-    await deleteDeck(deck.id)
+  async function confirmDelete(deck: Deck, withWords: boolean) {
+    await deleteDeck(deck.id, { withWords })
+    setDeckToDelete(null)
+  }
+
+  if (deckToDelete) {
+    const wordCount = wordCountOf(deckToDelete)
+    return (
+      <Modal title="Delete deck" onClose={onClose}>
+        <p className="modal-text" dir="auto">
+          {wordCount === 0
+            ? `"${deckToDelete.name}" has no words.`
+            : `"${deckToDelete.name}" has ${plural(wordCount, 'word')}. Do you want to delete them too?`}
+        </p>
+        <div className="stacked-buttons">
+          {wordCount > 0 && (
+            <button className="button bad-soft block" onClick={() => confirmDelete(deckToDelete, true)}>
+              Delete the deck and its {plural(wordCount, 'word')}
+            </button>
+          )}
+          <button
+            className={wordCount > 0 ? 'button secondary block' : 'button bad-soft block'}
+            onClick={() => confirmDelete(deckToDelete, false)}
+          >
+            {wordCount > 0 ? 'Delete only the deck, keep the words' : 'Delete the deck'}
+          </button>
+          <button className="button ghost block" onClick={() => setDeckToDelete(null)}>
+            Cancel
+          </button>
+        </div>
+      </Modal>
+    )
   }
 
   return (
@@ -70,8 +101,8 @@ export function DecksModal({ decks, words, onClose }: DecksModalProps) {
                 onBlur={(event) => handleRename(deck, event.target)}
                 onKeyDown={(event) => event.key === 'Enter' && event.currentTarget.blur()}
               />
-              <span className="deck-count">{words.filter((word) => word.deckId === deck.id).length}</span>
-              <button className="icon-button plain" onClick={() => handleDelete(deck)} aria-label={`Delete ${deck.name}`}>
+              <span className="deck-count">{wordCountOf(deck)}</span>
+              <button className="icon-button plain" onClick={() => setDeckToDelete(deck)} aria-label={`Delete ${deck.name}`}>
                 <Icon name="trash" size={19} />
               </button>
             </li>

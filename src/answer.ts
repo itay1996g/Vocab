@@ -12,15 +12,20 @@ export function normalizeText(text: string): string {
     .trim()
 }
 
+// English verbs: "to have" and "have" are the same answer.
+function withoutInfinitiveTo(normalizedText: string): string {
+  return normalizedText.replace(/^to /, '')
+}
+
 // The saved text can hold several answers ("big, large / huge") and notes in parentheses.
 function acceptedAnswers(expected: string): string[] {
   const parts = [expected, ...expected.split(/[,/;\n]/)]
   const partsWithoutNotes = parts.map((part) => part.replace(/\(.*?\)/g, ''))
-  return [...parts, ...partsWithoutNotes].map(normalizeText).filter(Boolean)
+  return [...parts, ...partsWithoutNotes].map(normalizeText).map(withoutInfinitiveTo).filter(Boolean)
 }
 
 export function isCorrectAnswer(answer: string, expected: string): boolean {
-  const normalizedAnswer = normalizeText(answer)
+  const normalizedAnswer = withoutInfinitiveTo(normalizeText(answer))
   if (!normalizedAnswer) return false
   return acceptedAnswers(expected).includes(normalizedAnswer)
 }

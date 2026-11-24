@@ -17,9 +17,11 @@ interface CardsScreenProps {
 export function CardsScreen({ words, decks, onGoToWords }: CardsScreenProps) {
   const [session, setSession] = useState<Session | null>(null)
   const [flipped, setFlipped] = useState(false)
+  const [hintShown, setHintShown] = useState(false)
 
   function startSession(items: PracticeItem[]) {
     setFlipped(false)
+    setHintShown(false)
     setSession({ items, results: [] })
   }
 
@@ -46,9 +48,11 @@ export function CardsScreen({ words, decks, onGoToWords }: CardsScreenProps) {
   const item = session.items[session.results.length]
   const prompt = promptOf(item)
   const answer = answerOf(item)
+  const comment = item.word.comment
 
   const handleAnswer = async (knewIt: boolean) => {
     setFlipped(false)
+    setHintShown(false)
     setSession({ ...session, results: [...session.results, knewIt] })
     await recordReview(item.word.id, knewIt)
   }
@@ -69,6 +73,22 @@ export function CardsScreen({ words, decks, onGoToWords }: CardsScreenProps) {
             <span className={prompt.length > LONG_TEXT_LENGTH ? 'face-text long' : 'face-text'} dir="auto">
               {prompt}
             </span>
+            {comment && hintShown && (
+              <span className="face-comment" dir="auto">
+                {comment}
+              </span>
+            )}
+            {comment && !hintShown && (
+              <button
+                className="hint-button"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  setHintShown(true)
+                }}
+              >
+                Show hint
+              </button>
+            )}
             <span className="face-hint">Tap to flip</span>
           </div>
           <div className="face back">
@@ -76,6 +96,11 @@ export function CardsScreen({ words, decks, onGoToWords }: CardsScreenProps) {
             <span className={answer.length > LONG_TEXT_LENGTH ? 'face-text long' : 'face-text'} dir="auto">
               {answer}
             </span>
+            {comment && (
+              <span className="face-comment" dir="auto">
+                {comment}
+              </span>
+            )}
           </div>
         </div>
       </div>

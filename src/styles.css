@@ -115,6 +115,11 @@ button {
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .screen-body {
   max-width: 640px;
   margin: 0 auto;
@@ -212,6 +217,16 @@ body:has(input:focus, textarea:focus) .fab {
 .button.bad-soft {
   background: var(--bad-soft);
   color: var(--bad);
+}
+
+.button.ghost {
+  background: none;
+  color: var(--accent-text);
+}
+
+.stacked-buttons {
+  display: grid;
+  gap: 10px;
 }
 
 .button.danger-text {
@@ -491,6 +506,46 @@ body:has(input:focus, textarea:focus) .fab {
   transition: transform 0.1s ease;
 }
 
+.word-list.selecting .word-row {
+  grid-template-columns: auto 1fr auto;
+}
+
+.word-row.selected {
+  box-shadow: inset 0 0 0 2px var(--accent), var(--shadow);
+}
+
+.select-mark {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  color: transparent;
+}
+
+.word-row.selected .select-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.selection-bar {
+  position: fixed;
+  inset: auto 16px calc(var(--tab-bar-height) + env(safe-area-inset-bottom) + 12px);
+  z-index: 25;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 608px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 20px;
+  background: var(--surface);
+  box-shadow: 0 8px 30px var(--shadow-color), 0 0 0 1px var(--border);
+  animation: pop-in 0.2s ease;
+}
+
 .word-text {
   display: grid;
   gap: 2px;
@@ -510,6 +565,15 @@ body:has(input:focus, textarea:focus) .fab {
   white-space: pre-line;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+.word-comment {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .word-meta {
@@ -835,6 +899,30 @@ select.input {
 .face-text.long {
   font-size: 22px;
   font-weight: 700;
+}
+
+.face-comment,
+.prompt-comment {
+  max-width: 100%;
+  color: var(--muted);
+  font-size: 16px;
+  white-space: pre-line;
+}
+
+.face-comment {
+  margin-top: 14px;
+}
+
+.hint-button {
+  justify-self: center;
+  margin-top: 12px;
+  padding: 6px 14px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .face-hint {
