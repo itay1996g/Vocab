@@ -39,7 +39,7 @@ const STARTER_WORDS = starterWords as WordList
 
 // A new install gets the starter words when the database is created, and an older install gets the missing ones at each upgrade.
 // Add 1 to the version when the starter words change.
-db.version(3)
+db.version(4)
   .stores({ decks: '++id', words: '++id, deckId' })
   .upgrade(async (transaction) => {
     // An empty bank was deleted on purpose, so it stays empty.
